@@ -1,0 +1,68 @@
+package producer
+
+import (
+	"encoding/json"
+	"fmt"
+	"forq-sdk-go/api"
+	"net/http"
+	"strings"
+)
+
+const (
+	produceMessageEndpointUrlTemplate = "/api/v1/queues/%s/messages"
+)
+
+// SyncForqProducer provides synchronous message production to Forq
+type SyncForqProducer struct {
+	httpClient    *http.Client
+	forqServerUrl string
+	apiKeyHeader  string
+}
+
+func NewSyncForqProducer(
+	httpClient *http.Client,
+	forqServerUrl string,
+	authSecret string,
+) *SyncForqProducer {
+	if strings.HasSuffix(forqServerUrl, "/") {
+		forqServerUrl = strings.TrimSuffix(forqServerUrl, "/")
+	}
+	return &SyncForqProducer{
+		httpClient:    httpClient,
+		forqServerUrl: forqServerUrl,
+		apiKeyHeader:  "ApiKey " + authSecret,
+	}
+}
+
+func (p *SyncForqProducer) Produce(newMessage api.NewMessageRequest, queueName string) error {
+	reqBody, err := json.Marshal(newMessage)
+	if err != nil {
+		return fmt.Errorf("failed to marshal new message request: %w", err)
+	}
+
+	endpoint := fmt.Sprintf(p.forqServerUrl+produceMessageEndpointUrlTemplate, queueName)
+
+	req, err := http.NewRequest(http.MethodPost, endpoint, strings.NewReader(string(reqBody)))
+	if err != nil {
+		return fmt.Errorf("failed to create new HTTP request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", p.apiKeyHeader)
+
+	resp, err := p.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to send HTTP request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNoContent {
+		return nil
+	}
+
+	var errResp api.ErrorResponse
+	if err := json.NewDecoder(resp.Body).Decode(&errResp); err != nil {
+		return fmt.Errorf("failed to decode error response: %w", err)
+	}
+	return &errResp
+}
