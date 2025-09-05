@@ -3,9 +3,10 @@ package consumer
 import (
 	"encoding/json"
 	"fmt"
-	"forq-sdk-go/api"
 	"net/http"
 	"strings"
+
+	"github.com/n0rdy/forq-sdk-go/api"
 )
 
 const (

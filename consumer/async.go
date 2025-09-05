@@ -1,9 +1,10 @@
 package consumer
 
 import (
-	"forq-sdk-go/api"
 	"net/http"
 	"sync"
+
+	"github.com/n0rdy/forq-sdk-go/api"
 )
 
 type AsyncForqConsumer struct {
