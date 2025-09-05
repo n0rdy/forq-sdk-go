@@ -47,6 +47,7 @@ func (p *SyncForqProducer) Produce(newMessage api.NewMessageRequest, queueName s
 		return fmt.Errorf("failed to create new HTTP request: %w", err)
 	}
 
+	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", p.apiKeyHeader)
 
