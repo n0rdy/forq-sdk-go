@@ -25,17 +25,17 @@ var (
 	HttpClientTimeoutTooShortError = fmt.Errorf("http client timeout must be 0 (no timeout) or at least (%d + few seconds extra buffer on top) seconds", longPollingMaxDurationSec)
 )
 
-type SyncForqConsumer struct {
+type ForqConsumer struct {
 	httpClient    *http.Client
 	forqServerUrl string
 	apiKeyHeader  string
 }
 
-func NewSyncForqConsumer(
+func NewForqConsumer(
 	httpClient *http.Client,
 	forqServerUrl string,
 	authSecret string,
-) (*SyncForqConsumer, error) {
+) (*ForqConsumer, error) {
 	if strings.HasSuffix(forqServerUrl, "/") {
 		forqServerUrl = strings.TrimSuffix(forqServerUrl, "/")
 	}
@@ -43,14 +43,14 @@ func NewSyncForqConsumer(
 		return nil, HttpClientTimeoutTooShortError
 	}
 
-	return &SyncForqConsumer{
+	return &ForqConsumer{
 		httpClient:    httpClient,
 		forqServerUrl: forqServerUrl,
 		apiKeyHeader:  "ApiKey " + authSecret,
 	}, nil
 }
 
-func (c *SyncForqConsumer) ConsumeOne(queueName string) (*api.MessageResponse, error) {
+func (c *ForqConsumer) ConsumeOne(queueName string) (*api.MessageResponse, error) {
 	endpoint := fmt.Sprintf(c.forqServerUrl+consumeMessageEndpointUrlTemplate, queueName)
 
 	req, err := http.NewRequest(http.MethodGet, endpoint, nil)
@@ -87,7 +87,7 @@ func (c *SyncForqConsumer) ConsumeOne(queueName string) (*api.MessageResponse, e
 	return &message, nil
 }
 
-func (c *SyncForqConsumer) Ack(queueName string, messageId string) error {
+func (c *ForqConsumer) Ack(queueName string, messageId string) error {
 	endpoint := fmt.Sprintf(c.forqServerUrl+ackMessageEndpointUrlTemplate, queueName, messageId)
 
 	req, err := http.NewRequest(http.MethodPost, endpoint, nil)
@@ -115,7 +115,7 @@ func (c *SyncForqConsumer) Ack(queueName string, messageId string) error {
 	return &errResp
 }
 
-func (c *SyncForqConsumer) Nack(queueName string, messageId string) error {
+func (c *ForqConsumer) Nack(queueName string, messageId string) error {
 	endpoint := fmt.Sprintf(c.forqServerUrl+nackMessageEndpointUrlTemplate, queueName, messageId)
 
 	req, err := http.NewRequest(http.MethodPost, endpoint, nil)

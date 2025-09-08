@@ -13,29 +13,29 @@ const (
 	produceMessageEndpointUrlTemplate = "/api/v1/queues/%s/messages"
 )
 
-// SyncForqProducer provides synchronous message production to Forq
-type SyncForqProducer struct {
+// ForqProducer provides message production to Forq
+type ForqProducer struct {
 	httpClient    *http.Client
 	forqServerUrl string
 	apiKeyHeader  string
 }
 
-func NewSyncForqProducer(
+func NewForqProducer(
 	httpClient *http.Client,
 	forqServerUrl string,
 	authSecret string,
-) *SyncForqProducer {
+) *ForqProducer {
 	if strings.HasSuffix(forqServerUrl, "/") {
 		forqServerUrl = strings.TrimSuffix(forqServerUrl, "/")
 	}
-	return &SyncForqProducer{
+	return &ForqProducer{
 		httpClient:    httpClient,
 		forqServerUrl: forqServerUrl,
 		apiKeyHeader:  "ApiKey " + authSecret,
 	}
 }
 
-func (p *SyncForqProducer) Produce(newMessage api.NewMessageRequest, queueName string) error {
+func (p *ForqProducer) Produce(newMessage api.NewMessageRequest, queueName string) error {
 	reqBody, err := json.Marshal(newMessage)
 	if err != nil {
 		return fmt.Errorf("failed to marshal new message request: %w", err)
