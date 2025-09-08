@@ -28,7 +28,7 @@ var (
 type ForqConsumer struct {
 	httpClient    *http.Client
 	forqServerUrl string
-	apiKeyHeader  string
+	authSecret    string
 }
 
 func NewForqConsumer(
@@ -46,7 +46,7 @@ func NewForqConsumer(
 	return &ForqConsumer{
 		httpClient:    httpClient,
 		forqServerUrl: forqServerUrl,
-		apiKeyHeader:  "ApiKey " + authSecret,
+		authSecret:    authSecret,
 	}, nil
 }
 
@@ -59,7 +59,7 @@ func (c *ForqConsumer) ConsumeOne(queueName string) (*api.MessageResponse, error
 	}
 
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Authorization", c.apiKeyHeader)
+	req.Header.Set("X-API-Key", c.authSecret)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -96,7 +96,7 @@ func (c *ForqConsumer) Ack(queueName string, messageId string) error {
 	}
 
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Authorization", c.apiKeyHeader)
+	req.Header.Set("X-API-Key", c.authSecret)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -124,7 +124,7 @@ func (c *ForqConsumer) Nack(queueName string, messageId string) error {
 	}
 
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Authorization", c.apiKeyHeader)
+	req.Header.Set("X-API-Key", c.authSecret)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {

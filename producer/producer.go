@@ -17,7 +17,7 @@ const (
 type ForqProducer struct {
 	httpClient    *http.Client
 	forqServerUrl string
-	apiKeyHeader  string
+	authSecret    string
 }
 
 func NewForqProducer(
@@ -31,7 +31,7 @@ func NewForqProducer(
 	return &ForqProducer{
 		httpClient:    httpClient,
 		forqServerUrl: forqServerUrl,
-		apiKeyHeader:  "ApiKey " + authSecret,
+		authSecret:    authSecret,
 	}
 }
 
@@ -50,7 +50,7 @@ func (p *ForqProducer) Produce(newMessage api.NewMessageRequest, queueName strin
 
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", p.apiKeyHeader)
+	req.Header.Set("X-API-Key", p.authSecret)
 
 	resp, err := p.httpClient.Do(req)
 	if err != nil {
