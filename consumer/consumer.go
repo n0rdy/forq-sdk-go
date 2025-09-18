@@ -1,6 +1,7 @@
 package consumer
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -36,11 +37,11 @@ func NewForqConsumer(
 	forqServerUrl string,
 	authSecret string,
 ) (*ForqConsumer, error) {
-	if strings.HasSuffix(forqServerUrl, "/") {
-		forqServerUrl = strings.TrimSuffix(forqServerUrl, "/")
-	}
 	if httpClient.Timeout != 0 && httpClient.Timeout.Seconds() < longPollingMaxDurationSec {
 		return nil, HttpClientTimeoutTooShortError
+	}
+	if strings.HasSuffix(forqServerUrl, "/") {
+		forqServerUrl = strings.TrimSuffix(forqServerUrl, "/")
 	}
 
 	return &ForqConsumer{
@@ -50,7 +51,10 @@ func NewForqConsumer(
 	}, nil
 }
 
-func (c *ForqConsumer) ConsumeOne(queueName string) (*api.MessageResponse, error) {
+func (c *ForqConsumer) ConsumeOne(
+	context context.Context,
+	queueName string,
+) (*api.MessageResponse, error) {
 	endpoint := fmt.Sprintf(c.forqServerUrl+consumeMessageEndpointUrlTemplate, queueName)
 
 	req, err := http.NewRequest(http.MethodGet, endpoint, nil)
@@ -61,7 +65,7 @@ func (c *ForqConsumer) ConsumeOne(queueName string) (*api.MessageResponse, error
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("X-API-Key", c.authSecret)
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := c.httpClient.Do(req.WithContext(context))
 	if err != nil {
 		return nil, fmt.Errorf("failed to send HTTP request: %w", err)
 	}
@@ -87,7 +91,11 @@ func (c *ForqConsumer) ConsumeOne(queueName string) (*api.MessageResponse, error
 	return &message, nil
 }
 
-func (c *ForqConsumer) Ack(queueName string, messageId string) error {
+func (c *ForqConsumer) Ack(
+	context context.Context,
+	queueName string,
+	messageId string,
+) error {
 	endpoint := fmt.Sprintf(c.forqServerUrl+ackMessageEndpointUrlTemplate, queueName, messageId)
 
 	req, err := http.NewRequest(http.MethodPost, endpoint, nil)
@@ -98,7 +106,7 @@ func (c *ForqConsumer) Ack(queueName string, messageId string) error {
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("X-API-Key", c.authSecret)
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := c.httpClient.Do(req.WithContext(context))
 	if err != nil {
 		return fmt.Errorf("failed to send HTTP request: %w", err)
 	}
@@ -115,7 +123,11 @@ func (c *ForqConsumer) Ack(queueName string, messageId string) error {
 	return &errResp
 }
 
-func (c *ForqConsumer) Nack(queueName string, messageId string) error {
+func (c *ForqConsumer) Nack(
+	context context.Context,
+	queueName string,
+	messageId string,
+) error {
 	endpoint := fmt.Sprintf(c.forqServerUrl+nackMessageEndpointUrlTemplate, queueName, messageId)
 
 	req, err := http.NewRequest(http.MethodPost, endpoint, nil)
@@ -126,7 +138,7 @@ func (c *ForqConsumer) Nack(queueName string, messageId string) error {
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("X-API-Key", c.authSecret)
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := c.httpClient.Do(req.WithContext(context))
 	if err != nil {
 		return fmt.Errorf("failed to send HTTP request: %w", err)
 	}

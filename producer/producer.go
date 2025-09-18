@@ -1,6 +1,7 @@
 package producer
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -35,7 +36,11 @@ func NewForqProducer(
 	}
 }
 
-func (p *ForqProducer) Produce(newMessage api.NewMessageRequest, queueName string) error {
+func (p *ForqProducer) Produce(
+	context context.Context,
+	newMessage api.NewMessageRequest,
+	queueName string,
+) error {
 	reqBody, err := json.Marshal(newMessage)
 	if err != nil {
 		return fmt.Errorf("failed to marshal new message request: %w", err)
@@ -52,7 +57,7 @@ func (p *ForqProducer) Produce(newMessage api.NewMessageRequest, queueName strin
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-API-Key", p.authSecret)
 
-	resp, err := p.httpClient.Do(req)
+	resp, err := p.httpClient.Do(req.WithContext(context))
 	if err != nil {
 		return fmt.Errorf("failed to send HTTP request: %w", err)
 	}
