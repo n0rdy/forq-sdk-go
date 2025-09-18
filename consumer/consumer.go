@@ -20,6 +20,7 @@ const (
 	// This is to avoid constant polling from the client side when the queue is empty.
 	// The client should set its HTTP client timeout to be at least this value + few seconds extra buffer on top.
 	longPollingMaxDurationSec = 30
+	longPollingBufferSec      = 5
 )
 
 var (
@@ -37,7 +38,7 @@ func NewForqConsumer(
 	forqServerUrl string,
 	authSecret string,
 ) (*ForqConsumer, error) {
-	if httpClient.Timeout != 0 && httpClient.Timeout.Seconds() < longPollingMaxDurationSec {
+	if httpClient.Timeout != 0 && httpClient.Timeout.Seconds() < (longPollingMaxDurationSec+longPollingBufferSec) {
 		return nil, HttpClientTimeoutTooShortError
 	}
 	if strings.HasSuffix(forqServerUrl, "/") {
