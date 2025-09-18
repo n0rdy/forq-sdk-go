@@ -1,7 +1,7 @@
 package api
 
 type MessageResponse struct {
-	Id      string `json:"id"`
+	ID      string `json:"id"`
 	Content string `json:"content"`
 }
 
