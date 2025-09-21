@@ -3,6 +3,8 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/n0rdy/forq-sdk-go.svg)](https://pkg.go.dev/github.com/n0rdy/forq-sdk-go)
 [![Go Report Card](https://goreportcard.com/badge/github.com/n0rdy/forq-sdk-go)](https://goreportcard.com/report/github.com/n0rdy/forq-sdk-go)
 
+Check out the [Forq project](https://forq.sh) for more information about the server itself.
+
 ## Go SDK
 
 The Go SDK is available at [GitHub](https://github.com/n0rdy/forq-sdk-go)
