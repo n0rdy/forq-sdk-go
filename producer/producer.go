@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/n0rdy/forq-sdk-go/api"
@@ -46,7 +47,7 @@ func (p *ForqProducer) Produce(
 		return fmt.Errorf("failed to marshal new message request: %w", err)
 	}
 
-	endpoint := fmt.Sprintf(p.forqServerUrl+produceMessageEndpointUrlTemplate, queueName)
+	endpoint := fmt.Sprintf(p.forqServerUrl+produceMessageEndpointUrlTemplate, url.PathEscape(queueName))
 
 	req, err := http.NewRequest(http.MethodPost, endpoint, strings.NewReader(string(reqBody)))
 	if err != nil {

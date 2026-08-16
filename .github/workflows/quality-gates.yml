@@ -47,9 +47,8 @@ jobs:
       - name: Build application
         run: go build -v ./...
 
-      # Placeholder for when you add tests
-      # - name: Run tests
-      #   run: go test -v ./...
+      - name: Run tests
+        run: go test -race ./...
 
   # Prevent merging if quality checks fail
   quality-gate:
