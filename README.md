@@ -30,11 +30,11 @@ You can then use the producer to send messages:
 ```go
 queueName := "my-queue"
 newMessage := api.NewMessageRequest{
-    Context: "I am going on an adventure!",
+    Content: "I am going on an adventure!",
     ProcessAfter: 1757875397418,
 }
 
-err := p.SendMessage(context.Background(), newMessage, queueName)
+err := p.Produce(context.Background(), newMessage, queueName)
 ```
 
 ### Consumer
@@ -63,11 +63,16 @@ Then you'll process the message.
 If processing is successful, you have to acknowledge the message, otherwise it will be re-delivered after the max processing time.
 
 ```go
-err = c.Ack(context.Background(), "my-queue", msg.ID)
+err = c.Ack(context.Background(), "my-queue", msg)
 ```
 
 If processing failed, you have to nack the message:
 
 ```go
-err = c.Nack(context.Background(), "my-queue", msg.ID)
+err = c.Nack(context.Background(), "my-queue", msg)
 ```
+
+`Ack` and `Nack` take the whole message (not just the ID) because the server requires the delivery receipt
+from the consume response: it fences the ack/nack to that exact delivery, so a late ack/nack from a consumer
+that exceeded the max processing time cannot affect a redelivery owned by another consumer. The SDK sends
+the receipt for you via the `X-Forq-Receipt` header.
