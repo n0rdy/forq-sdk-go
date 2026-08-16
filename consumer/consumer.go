@@ -3,8 +3,10 @@ package consumer
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/n0rdy/forq-sdk-go/api"
@@ -25,6 +27,7 @@ const (
 
 var (
 	HttpClientTimeoutTooShortError = fmt.Errorf("http client timeout must be 0 (no timeout) or at least (%d + few seconds extra buffer on top) seconds", longPollingMaxDurationSec)
+	NilMessageError                = errors.New("message must not be nil - pass the message returned by ConsumeOne")
 )
 
 type ForqConsumer struct {
@@ -56,7 +59,7 @@ func (c *ForqConsumer) ConsumeOne(
 	context context.Context,
 	queueName string,
 ) (*api.MessageResponse, error) {
-	endpoint := fmt.Sprintf(c.forqServerUrl+consumeMessageEndpointUrlTemplate, queueName)
+	endpoint := fmt.Sprintf(c.forqServerUrl+consumeMessageEndpointUrlTemplate, url.PathEscape(queueName))
 
 	req, err := http.NewRequest(http.MethodGet, endpoint, nil)
 	if err != nil {
@@ -92,12 +95,19 @@ func (c *ForqConsumer) ConsumeOne(
 	return &message, nil
 }
 
+// Ack acknowledges the given message as successfully processed. The message's
+// Receipt fences the ack to this exact delivery: if the message exceeded the
+// visibility timeout and was redelivered to another consumer, the ack returns
+// a not_found.message error instead of affecting the other delivery.
 func (c *ForqConsumer) Ack(
 	context context.Context,
 	queueName string,
-	messageId string,
+	message *api.MessageResponse,
 ) error {
-	endpoint := fmt.Sprintf(c.forqServerUrl+ackMessageEndpointUrlTemplate, queueName, messageId)
+	if message == nil {
+		return NilMessageError
+	}
+	endpoint := fmt.Sprintf(c.forqServerUrl+ackMessageEndpointUrlTemplate, url.PathEscape(queueName), message.ID)
 
 	req, err := http.NewRequest(http.MethodPost, endpoint, nil)
 	if err != nil {
@@ -106,6 +116,7 @@ func (c *ForqConsumer) Ack(
 
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("X-API-Key", c.authSecret)
+	req.Header.Set("X-Forq-Receipt", message.Receipt)
 
 	resp, err := c.httpClient.Do(req.WithContext(context))
 	if err != nil {
@@ -124,12 +135,18 @@ func (c *ForqConsumer) Ack(
 	return &errResp
 }
 
+// Nack reports the given message as failed to process, scheduling a retry (or
+// a DLQ move once attempts are exhausted). Like Ack, it is fenced to this
+// exact delivery via the message's Receipt.
 func (c *ForqConsumer) Nack(
 	context context.Context,
 	queueName string,
-	messageId string,
+	message *api.MessageResponse,
 ) error {
-	endpoint := fmt.Sprintf(c.forqServerUrl+nackMessageEndpointUrlTemplate, queueName, messageId)
+	if message == nil {
+		return NilMessageError
+	}
+	endpoint := fmt.Sprintf(c.forqServerUrl+nackMessageEndpointUrlTemplate, url.PathEscape(queueName), message.ID)
 
 	req, err := http.NewRequest(http.MethodPost, endpoint, nil)
 	if err != nil {
@@ -138,6 +155,7 @@ func (c *ForqConsumer) Nack(
 
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("X-API-Key", c.authSecret)
+	req.Header.Set("X-Forq-Receipt", message.Receipt)
 
 	resp, err := c.httpClient.Do(req.WithContext(context))
 	if err != nil {
