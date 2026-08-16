@@ -31,7 +31,7 @@ You can then use the producer to send messages:
 queueName := "my-queue"
 newMessage := api.NewMessageRequest{
     Content: "I am going on an adventure!",
-    ProcessAfter: 1757875397418,
+    ProcessAfter: time.Now().Add(time.Hour).UnixMilli(), // optional: deliver in 1 hour; omit for immediate delivery
 }
 
 err := p.Produce(context.Background(), newMessage, queueName)

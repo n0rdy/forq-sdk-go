@@ -160,3 +160,31 @@ func TestTrailingSlashInServerURL(t *testing.T) {
 		t.Fatalf("trailing slash not trimmed, path: %s", rec.path)
 	}
 }
+
+func TestAckNack_NilMessageReturnsError(t *testing.T) {
+	srv, _ := newServer(t, http.StatusNoContent, "")
+	c := newConsumer(t, srv.URL)
+
+	if err := c.Ack(context.Background(), "orders", nil); !errors.Is(err, NilMessageError) {
+		t.Fatalf("Ack(nil): got %v, want NilMessageError", err)
+	}
+	if err := c.Nack(context.Background(), "orders", nil); !errors.Is(err, NilMessageError) {
+		t.Fatalf("Nack(nil): got %v, want NilMessageError", err)
+	}
+}
+
+func TestQueueNameIsPathEscaped(t *testing.T) {
+	var gotRequestURI string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotRequestURI = r.URL.RequestURI()
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	t.Cleanup(srv.Close)
+	c := newConsumer(t, srv.URL)
+
+	// a queue name with a slash must not change the request path shape
+	c.ConsumeOne(context.Background(), "orders/evil")
+	if gotRequestURI != "/api/v1/queues/orders%2Fevil/messages" {
+		t.Fatalf("queue name not path-escaped, request URI: %s", gotRequestURI)
+	}
+}

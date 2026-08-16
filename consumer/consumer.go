@@ -3,8 +3,10 @@ package consumer
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/n0rdy/forq-sdk-go/api"
@@ -25,6 +27,7 @@ const (
 
 var (
 	HttpClientTimeoutTooShortError = fmt.Errorf("http client timeout must be 0 (no timeout) or at least (%d + few seconds extra buffer on top) seconds", longPollingMaxDurationSec)
+	NilMessageError                = errors.New("message must not be nil - pass the message returned by ConsumeOne")
 )
 
 type ForqConsumer struct {
@@ -56,7 +59,7 @@ func (c *ForqConsumer) ConsumeOne(
 	context context.Context,
 	queueName string,
 ) (*api.MessageResponse, error) {
-	endpoint := fmt.Sprintf(c.forqServerUrl+consumeMessageEndpointUrlTemplate, queueName)
+	endpoint := fmt.Sprintf(c.forqServerUrl+consumeMessageEndpointUrlTemplate, url.PathEscape(queueName))
 
 	req, err := http.NewRequest(http.MethodGet, endpoint, nil)
 	if err != nil {
@@ -101,7 +104,10 @@ func (c *ForqConsumer) Ack(
 	queueName string,
 	message *api.MessageResponse,
 ) error {
-	endpoint := fmt.Sprintf(c.forqServerUrl+ackMessageEndpointUrlTemplate, queueName, message.ID)
+	if message == nil {
+		return NilMessageError
+	}
+	endpoint := fmt.Sprintf(c.forqServerUrl+ackMessageEndpointUrlTemplate, url.PathEscape(queueName), message.ID)
 
 	req, err := http.NewRequest(http.MethodPost, endpoint, nil)
 	if err != nil {
@@ -137,7 +143,10 @@ func (c *ForqConsumer) Nack(
 	queueName string,
 	message *api.MessageResponse,
 ) error {
-	endpoint := fmt.Sprintf(c.forqServerUrl+nackMessageEndpointUrlTemplate, queueName, message.ID)
+	if message == nil {
+		return NilMessageError
+	}
+	endpoint := fmt.Sprintf(c.forqServerUrl+nackMessageEndpointUrlTemplate, url.PathEscape(queueName), message.ID)
 
 	req, err := http.NewRequest(http.MethodPost, endpoint, nil)
 	if err != nil {
